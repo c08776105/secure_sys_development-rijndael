@@ -1,6 +1,8 @@
 /*
- * TODO: Add your name and student number here, along with
- *       a brief description of this code.
+ * Eamonn McClelland - C08776105
+ *
+ * This header file declares the functions used to encrypt and decrypt plaintext/ciphertext using the
+ * AES algorithm (implemented in rijndael.c).
  */
 
 #ifndef RIJNDAEL_H

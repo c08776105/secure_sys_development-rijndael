@@ -1,9 +1,9 @@
 /*
- * TODO: Add your name and student number here, along with
- *       a brief description of this code.
+ * Eamonn McClelland - C08776105
  *
- * TODO: add getRconValue function
- * TODO: add getSBoxValue function
+ * This file contains two implementations of the aes_encrypt_block and aes_decrypt_block functions
+ * defined in rijndael.h as well associated functions required for both functions to complete encrypt/decrypt
+ * operations of tha AES algorithm.
  */
 
 #include <stdlib.h>
@@ -13,13 +13,14 @@
 
 #include "rijndael.h"
 
-#define KEY_SIZE 16
+#define KEY_SIZE 16 // the key size for 128bit AES encryption
 #define DEBUG_ACTIVE 1
-#define VECTOR_SIZE_BYTES 176
-#define ROUNDS_NUMBER 10
-#define MOST_SIG_BIT_MASK 0x80
-#define IRR_POLYNOMIAL 0x1B
+#define VECTOR_SIZE_BYTES 176 // vector size, which is == key size * total number of encryption rounds
+#define ROUNDS_NUMBER 10 // number of rounds (excluding the final round) during encryption
+#define MOST_SIG_BIT_MASK 0x80 // most significant bit index for bitwise operations
+#define IRR_POLYNOMIAL 0x1B // fixed polynomial for finite field calculations, used in galois multiplication
 
+// Round constant values, or rcon
 unsigned char round_constant[] = {
     0x8d, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36, 0x6c, 0xd8,
     0xab, 0x4d, 0x9a, 0x2f, 0x5e, 0xbc, 0x63, 0xc6, 0x97, 0x35, 0x6a, 0xd4, 0xb3,
@@ -42,6 +43,7 @@ unsigned char round_constant[] = {
     0x91, 0x39, 0x72, 0xe4, 0xd3, 0xbd, 0x61, 0xc2, 0x9f, 0x25, 0x4a, 0x94, 0x33,
     0x66, 0xcc, 0x83, 0x1d, 0x3a, 0x74, 0xe8, 0xcb};
 
+// S-box value constant
 unsigned char SBox[] = {
     0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
     0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0, 0xad, 0xd4, 0xa2, 0xaf, 0x9c, 0xa4, 0x72, 0xc0,
@@ -60,6 +62,7 @@ unsigned char SBox[] = {
     0xe1, 0xf8, 0x98, 0x11, 0x69, 0xd9, 0x8e, 0x94, 0x9b, 0x1e, 0x87, 0xe9, 0xce, 0x55, 0x28, 0xdf,
     0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16};
 
+// Inverse S-Box values
 unsigned char SBoxInv[] = {
     0x52, 0x09, 0x6a, 0xd5, 0x30, 0x36, 0xa5, 0x38, 0xbf, 0x40, 0xa3, 0x9e, 0x81, 0xf3, 0xd7, 0xfb,
     0x7c, 0xe3, 0x39, 0x82, 0x9b, 0x2f, 0xff, 0x87, 0x34, 0x8e, 0x43, 0x44, 0xc4, 0xde, 0xe9, 0xcb,
@@ -78,6 +81,9 @@ unsigned char SBoxInv[] = {
     0xa0, 0xe0, 0x3b, 0x4d, 0xae, 0x2a, 0xf5, 0xb0, 0xc8, 0xeb, 0xbb, 0x3c, 0x83, 0x53, 0x99, 0x61,
     0x17, 0x2b, 0x04, 0x7e, 0xba, 0x77, 0xd6, 0x26, 0xe1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0c, 0x7d};
 
+/**
+ * Pretty printing the supplied label and value array
+ */
 void pprint(char *label, unsigned char *val)
 {
   printf("%s:\n", label);
@@ -93,23 +99,9 @@ void pprint(char *label, unsigned char *val)
   printf("\n\n");
 }
 
-void print_block_r(char *block_name, unsigned char *block)
-{
-  printf("%s as HEX:\n", block_name);
-  for (int i = 0; i < 16; i++)
-  {
-    // Print characters in HEX format, 16 chars per line
-    printf("%2.2x%c", block[i], ((i + 1) % 16) ? ' ' : '\n');
-  }
-  printf("\n");
-}
-
 /**
  * Implements Galois multiplication, taking 2x8-bit values and multiplying them within
  * the finite field.
- *
- * Adopted from:
- * https://github.com/m3y54m/aes-in-c/blob/46096b255cffda73f2fc04c3ea04b68a4a7f056f/src/main.c#L339
  */
 unsigned char galois_multiplication(unsigned char a, unsigned char b)
 {
@@ -154,7 +146,6 @@ unsigned char galois_multiplication(unsigned char a, unsigned char b)
  */
 void sub_bytes(unsigned char *block)
 {
-  // TODO: Test me!
   for (int i = 0; i < 16; i++)
   {
     block[i] = SBox[block[i]];
@@ -170,7 +161,6 @@ void sub_bytes(unsigned char *block)
  */
 void shift_rows(unsigned char *block)
 {
-  // TODO: Test me!
   // For each of the 4 rows
   for (int i = 0; i < 4; i++)
   {
@@ -198,7 +188,6 @@ void shift_rows(unsigned char *block)
  */
 void mix_columns(unsigned char *block)
 {
-  // TODO: Test me!
   // Create four columns to iterate over
   unsigned char column[4];
 
@@ -244,77 +233,62 @@ void mix_columns(unsigned char *block)
  */
 void invert_sub_bytes(unsigned char *block)
 {
-  // TODO: Test me!
-  for (int i = 0; i < 16; i++)
+  for (int byteIndex = 0; byteIndex < 16; byteIndex++)
   {
-    block[i] = SBoxInv[block[i]];
+    block[byteIndex] = SBoxInv[block[byteIndex]];
   }
 }
 
 void invert_shift_rows(unsigned char *block)
 {
-  // TODO: Test me!
   for (int rowIndex = 0; rowIndex < 4; rowIndex++)
   {
-    unsigned char *state = block + rowIndex * 4;
-    unsigned char tmp;
-    // each iteration shifts the row to the right by 1
-    for (int i = 0; i < rowIndex; i++)
+    unsigned char *block_segment = block + rowIndex * 4;
+    unsigned char previousElement;
+
+    for (int row = 0; row < rowIndex; row++)
     {
-      tmp = state[3];
-      for (int j = 3; j > 0; j--)
+      previousElement = block_segment[3];
+      for (int col = 3; col > 0; col--)
       {
-        state[j] = state[j - 1];
+        block_segment[col] = block_segment[col - 1];
       }
-      state[0] = tmp;
+      block_segment[0] = previousElement;
     }
   }
 }
 
 void invert_mix_columns(unsigned char *block)
 {
-  // TODO: Implement me!
-  int i, j;
   unsigned char column[4];
 
   // iterate over the 4 columns
-  for (i = 0; i < 4; i++)
+  for (int col = 0; col < 4; col++)
   {
     // construct one column by iterating over the 4 rows
-    for (j = 0; j < 4; j++)
+    for (int row = 0; row < 4; row++)
     {
-      column[j] = block[(j * 4) + i];
+      column[row] = block[(row * 4) + col];
     }
 
-    // apply the invMixColumn on one column
-    // invMixColumn(column);
-    unsigned char cpy[4];
-    int i;
-    for (i = 0; i < 4; i++)
-    {
-      cpy[i] = column[i];
-    }
-    column[0] = galois_multiplication(cpy[0], 14) ^
-                galois_multiplication(cpy[3], 9) ^
-                galois_multiplication(cpy[2], 13) ^
-                galois_multiplication(cpy[1], 11);
-    column[1] = galois_multiplication(cpy[1], 14) ^
-                galois_multiplication(cpy[0], 9) ^
-                galois_multiplication(cpy[3], 13) ^
-                galois_multiplication(cpy[2], 11);
-    column[2] = galois_multiplication(cpy[2], 14) ^
-                galois_multiplication(cpy[1], 9) ^
-                galois_multiplication(cpy[0], 13) ^
-                galois_multiplication(cpy[3], 11);
-    column[3] = galois_multiplication(cpy[3], 14) ^
-                galois_multiplication(cpy[2], 9) ^
-                galois_multiplication(cpy[1], 13) ^
-                galois_multiplication(cpy[0], 11);
+    // Create a temporary copy of the column before
+    // performing galois multiplication
+    unsigned char tempCol[4];
+    memcpy(tempCol, column, 4);
 
-    // put the values back into the state
-    for (j = 0; j < 4; j++)
+    // Perform galois multiplication over all values, and combine using XOR
+    for (int i = 0; i < 4; i++) {
+      column[i] = galois_multiplication(tempCol[(0 + i) % 4], 14) ^
+                  galois_multiplication(tempCol[(3 + i) % 4], 9) ^
+                  galois_multiplication(tempCol[(2 + i) % 4], 13) ^
+                  galois_multiplication(tempCol[(1 + i) % 4], 11);
+    }
+
+    // Restore the values in the block array
+    for (int rowIndex = 0; rowIndex < 4; rowIndex++)
     {
-      block[(j * 4) + i] = column[j];
+      int blockIndex = (rowIndex * 4) + col;
+      block[blockIndex] = column[rowIndex];
     }
   }
 }
@@ -322,18 +296,15 @@ void invert_mix_columns(unsigned char *block)
 /*
  * This operation is shared between encryption and decryption
  *
- * The block is XORed with the current round key.
+ * The block is XORed with the current round key to introduce diffusion,
+ * enhancing cryptographic security of the algorithm.
  */
 void add_round_key(unsigned char *block, unsigned char *round_key)
 {
-  // TODO: Test me!
-  // for (int i = 0; i < 16; i++)
-  // {
-  //   block[i] = block[i] ^ round_key[i];
-  // }
-  int i;
-  for (i = 0; i < 16; i++)
+  for (int i = 0; i < 16; i++)
+  {
     block[i] = block[i] ^ round_key[i];
+  }
 }
 
 /*
@@ -356,27 +327,31 @@ unsigned char *expand_key(unsigned char *cipher_key)
   int rcon_iteration = 1;
   unsigned char expansion_block[4]; // a 4 byte block for each block the key processed
 
+  // Core key expansion operation. bytes_generated stores the bytes generated so far in
+  // the expanded key. When its size hits 176, exit the loop.
   while (bytes_generated < VECTOR_SIZE_BYTES)
   {
     // Copy the previous 4 bytes into expansion_block
     memcpy(expansion_block, &expanded_key[bytes_generated - 4], 4);
 
-    // Core operation
     if (bytes_generated % BLOCK_SIZE == 0)
     {
       // Create a pointer of the 32bit word
       unsigned int *word_ptr = (unsigned int *)expansion_block;
 
-      // perform left rotation of the word
-      *word_ptr = (*word_ptr >> 8) | ((*word_ptr & 0xFF) << 24);
+      // Perform left rotation of the word
+      unsigned char rightmost_byte = (unsigned char)(*word_ptr);
+      *word_ptr <<= 8; // shift the pointer by 1 byte
+      *word_ptr |= rightmost_byte; // set the rightmost byte to the extracted value
 
       // Perform sbox substitution on all 4 parts of the word
-      expansion_block[0] = SBox[expansion_block[0]];
-      expansion_block[1] = SBox[expansion_block[1]];
-      expansion_block[2] = SBox[expansion_block[2]];
-      expansion_block[3] = SBox[expansion_block[3]];
+      // This is performed as a linear transformation, used to
+      // increase resistance to analysis techniques
+      for(int i = 0; i < 4; i++) {
+        expansion_block[i] = SBox[expansion_block[i]];
+      }
 
-      // XOR the output of the rcon operation
+      // XOR the output of the rcon value from the current iteration index
       expansion_block[0] ^= round_constant[rcon_iteration++];
     }
 
@@ -384,7 +359,8 @@ unsigned char *expand_key(unsigned char *cipher_key)
     // This becomes the next 4 bytes in the expanded key.
     for (unsigned char i = 0; i < 4; ++i)
     {
-      expanded_key[bytes_generated] = expanded_key[bytes_generated - BLOCK_SIZE] ^ expansion_block[i];
+      int indexToXor = bytes_generated - BLOCK_SIZE;
+      expanded_key[bytes_generated] = expanded_key[indexToXor] ^ expansion_block[i];
       bytes_generated++;
     }
   }
@@ -392,14 +368,19 @@ unsigned char *expand_key(unsigned char *cipher_key)
   return expanded_key;
 }
 
-// TODO: document
+/**
+ * Create a round key, which is a 4x4 matrix stored in a one dimensional array,
+ * using the expanded key as its source.
+ */
 void create_round_key(unsigned char *expanded_key, unsigned char *round_key)
 {
-  for (int i = 0; i < 4; i++)
+  for (int rowIndex = 0; rowIndex < 4; rowIndex++)
   {
-    for (int j = 0; j < 4; j++)
+    for (int colIndex = 0; colIndex < 4; colIndex++)
     {
-      round_key[(i + (j * 4))] = expanded_key[(i * 4) + j];
+      int roundKeyIndex = rowIndex + (colIndex * 4);
+      int expandedKeyIndex = (rowIndex * 4) + colIndex;
+      round_key[roundKeyIndex] = expanded_key[expandedKeyIndex];
     }
   }
 }
@@ -410,20 +391,21 @@ void create_round_key(unsigned char *expanded_key, unsigned char *round_key)
  */
 unsigned char *aes_encrypt_block(unsigned char *plaintext, unsigned char *key)
 {
-  // TODO: Test me!
-  // TODO: dont use output, rather create a char array with 16 length block[16]
   unsigned char *output =
       (unsigned char *)malloc(sizeof(unsigned char) * BLOCK_SIZE);
 
-  // memcpy(output, plaintext, BLOCK_SIZE);
+  // Block to hold the temporarily transposed matrix to encrypt
   unsigned char block[16];
 
-  // Copy the plaintext into the block
+  // Copy the plaintext into the block, transposing the order.
+  int plainTextIndex = 0;
   for (int col = 0; col < 4; col++)
   {
     for (int row = 0; row < 4; row++)
     {
-      block[col + (row * 4)] = plaintext[(col * 4) + row];
+      int blockIndex = col + (row * 4); // index to transpose to
+      block[blockIndex] = plaintext[plainTextIndex];
+      plainTextIndex++; // Sequential index to copy from
     }
   }
 
@@ -435,8 +417,6 @@ unsigned char *aes_encrypt_block(unsigned char *plaintext, unsigned char *key)
     pprint("Expanded Key", expanded_key);
   }
 
-  pprint("Input", plaintext);
-
   // Initial round
   unsigned char round_key[KEY_SIZE];
   create_round_key(expanded_key, round_key);
@@ -444,9 +424,9 @@ unsigned char *aes_encrypt_block(unsigned char *plaintext, unsigned char *key)
   add_round_key(block, round_key);
 
   // Rounds (start i at 1 because initial round is already complete)
-  for (int i = 1; i < ROUNDS_NUMBER; i++)
+  for (int roundIndex = 1; roundIndex < ROUNDS_NUMBER; roundIndex++)
   {
-    create_round_key(expanded_key + 16 * i, round_key);
+    create_round_key(expanded_key + 16 * roundIndex, round_key);
 
     //  Sub Bytes - sub_bytes
     sub_bytes(block);
@@ -459,11 +439,6 @@ unsigned char *aes_encrypt_block(unsigned char *plaintext, unsigned char *key)
 
     //  Add Round Key - add_round_key
     add_round_key(block, round_key);
-
-    // TODO: cleanup
-    // char buf[20];
-    // snprintf(buf, 20, "Round iteration %d", i);
-    // pprint(buf, output);
   }
 
   // Final Round
@@ -472,19 +447,20 @@ unsigned char *aes_encrypt_block(unsigned char *plaintext, unsigned char *key)
   shift_rows(block);
   add_round_key(block, round_key);
 
-  // Copy block back to output
+  // Transpose the block back to output
+  int outputIndex = 0;
   for (int col = 0; col < 4; col++)
   {
-    // iterate over the rows
     for (int row = 0; row < 4; row++)
     {
-      output[(col * 4) + row] = block[col + (row * 4)];
+      int blockIndex = col + (row * 4);
+      output[outputIndex] = block[blockIndex];
+      outputIndex++;
     }
   }
 
   // de-allocate memory for expandedKey
   free(expanded_key);
-  expanded_key = NULL;
 
   return output;
 }
@@ -492,34 +468,63 @@ unsigned char *aes_encrypt_block(unsigned char *plaintext, unsigned char *key)
 unsigned char *aes_decrypt_block(unsigned char *ciphertext,
                                  unsigned char *key)
 {
-  // TODO: Implement me!
   unsigned char *output =
       (unsigned char *)malloc(sizeof(unsigned char) * BLOCK_SIZE);
 
-  memcpy(output, ciphertext, BLOCK_SIZE);
+  // Block to hold the temporarily transposed matrix to encrypt
+  unsigned char block[16];
+
+  // Copy the plaintext into the block, transposing the order.
+  int cipherTextIndex = 0;
+  for (int col = 0; col < 4; col++)
+  {
+    for (int row = 0; row < 4; row++)
+    {
+      int blockIndex = col + (row * 4); // index to transpose to
+      block[blockIndex] = ciphertext[cipherTextIndex];
+      cipherTextIndex++; // Sequential index to copy from
+    }
+  }
 
   // Expand key
   unsigned char *expanded_key = expand_key(key);
 
   // Initial round
   unsigned char round_key[KEY_SIZE];
-  create_round_key(expanded_key, round_key);
-  add_round_key(output, round_key);
+  create_round_key(expanded_key + (16 * ROUNDS_NUMBER), round_key);
+  add_round_key(block, round_key);
 
-  for (int i = ROUNDS_NUMBER - 1; i > 0; i--)
+  for (int roundIndex = ROUNDS_NUMBER - 1; roundIndex > 0; roundIndex--)
   {
-    create_round_key(expanded_key + 16 * i, round_key);
-    invert_shift_rows(output);
-    invert_sub_bytes(output);
-    add_round_key(output, round_key);
-    invert_mix_columns(output);
+    create_round_key(expanded_key + 16 * roundIndex, round_key);
+    invert_shift_rows(block);
+    invert_sub_bytes(block);
+    add_round_key(block, round_key);
+    invert_mix_columns(block);
   }
 
   // Final round
   create_round_key(expanded_key, round_key);
-  invert_shift_rows(output);
-  invert_sub_bytes(output);
-  add_round_key(output, round_key);
+  invert_shift_rows(block);
+  invert_sub_bytes(block);
+  add_round_key(block, round_key);
+
+  // Transpose the block back to output
+  int outputIndex = 0;
+
+  for (int col = 0; col < 4; col++)
+  {
+    // iterate over the rows
+    for (int row = 0; row < 4; row++)
+    {
+      int blockIndex = col + (row * 4);
+      output[outputIndex] = block[blockIndex];
+      outputIndex++;
+    }
+  }
+
+  // Free expanded key memory
+  free(expanded_key);
 
   return output;
 }
