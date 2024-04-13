@@ -4,6 +4,28 @@
  * This file contains two implementations of the aes_encrypt_block and aes_decrypt_block functions
  * defined in rijndael.h as well associated functions required for both functions to complete encrypt/decrypt
  * operations of tha AES algorithm.
+ *
+ * Encryption:
+ * Create expanded key
+ * Create and add round key
+ *
+ * create round key
+ * sub bytes
+ * mix rows
+ * shift columns
+ * add round key
+ *
+ *
+ * Decryption:
+ * Create expanded key
+ * Create and add round key
+ *
+ * For each round:
+ * create round key
+ * inverted shift rows
+ * inverted sub bytes
+ * add round key
+ * inverted mix columns
  */
 
 #include <stdlib.h>
