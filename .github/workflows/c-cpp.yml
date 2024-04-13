@@ -16,4 +16,14 @@ jobs:
     - name: make
       run: make
     - name: test run
-      run: ./main
+      run: ./main > test.out
+    - name: check test results
+      run: |
+        TEST_RES=$(tail -16 test.out | grep true | wc -l)
+
+        if [ $TEST_RES = 16 ];
+          echo "Test passed"
+        else
+          echo "Test failed"
+          exit 1
+        fi
